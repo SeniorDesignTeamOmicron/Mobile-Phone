@@ -2,30 +2,13 @@
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/MainLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <ScrollView
-        android:id="@+id/scrollView2"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout2">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-        </LinearLayout>
-    </ScrollView>
-
     <LinearLayout
-        android:id="@+id/linearLayout2"
+        android:id="@+id/TopLayout"
         android:layout_width="368dp"
         android:layout_height="51dp"
         android:layout_marginEnd="8dp"
@@ -36,23 +19,188 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <CheckBox
-            android:id="@+id/status"
+        <Button
+            android:id="@+id/RightFoot"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Connection" />
+            android:text="Left Foot" />
 
         <Button
-            android:id="@+id/connect"
-            style="@android:style/Widget.Holo.Button"
+            android:id="@+id/LeftFoot"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:onClick="bt_connect"
-            android:text="Connect"
-            tools:layout_editor_absoluteX="148dp"
-            tools:layout_editor_absoluteY="87dp" />
+            android:text="Right Foot" />
     </LinearLayout>
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/Link"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginTop="8dp"
+        android:clickable="true"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="@+id/TopLayout"
+        app:layout_constraintTop_toTopOf="@+id/TopLayout"
+        app:srcCompat="@android:drawable/arrow_up_float"
+        tools:layout_editor_absoluteX="172dp" />
+
+    <TextView
+        android:id="@+id/Steps"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="36dp"
+        android:layout_marginTop="36dp"
+        android:text="Steps"
+        android:textColor="@android:color/black"
+        android:textSize="24sp"
+        android:visibility="visible"
+        app:layout_constraintStart_toStartOf="@+id/StepsButton"
+        app:layout_constraintTop_toTopOf="@+id/StepsButton" />
+
+    <TextView
+        android:id="@+id/Goal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp"
+        android:layout_marginEnd="32dp"
+        android:text="Goal"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toBottomOf="@+id/StepsButton"
+        app:layout_constraintEnd_toEndOf="@+id/StepsButton" />
+
+    <Button
+        android:id="@+id/StepsButton"
+        android:layout_width="0dp"
+        android:layout_height="144dp"
+        android:layout_marginEnd="65dp"
+        android:layout_marginStart="65dp"
+        android:layout_marginTop="50dp"
+        android:background="@drawable/two_colored_round_rect"
+        android:textAlignment="viewStart"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/Link" />
+
+    <Button
+        android:id="@+id/PastHourButton"
+        android:layout_width="118dp"
+        android:layout_height="69dp"
+        android:layout_marginBottom="64dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="64dp"
+        android:background="@drawable/two_colored_round_rect"
+        app:layout_constraintBottom_toTopOf="@+id/Account"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/StepsButton" />
+
+    <Button
+        android:id="@+id/ProjectedButton"
+        android:layout_width="118dp"
+        android:layout_height="69dp"
+        android:layout_marginBottom="64dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginTop="64dp"
+        android:background="@drawable/two_colored_round_rect"
+        app:layout_constraintBottom_toTopOf="@+id/Account"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/StepsButton" />
+
+    <TextView
+        android:id="@+id/textView6"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Past Hour"
+        android:textAlignment="center"
+        app:layout_constraintBottom_toBottomOf="@+id/PastHourButton"
+        app:layout_constraintEnd_toEndOf="@+id/PastHourButton"
+        app:layout_constraintStart_toStartOf="@+id/PastHourButton"
+        app:layout_constraintTop_toTopOf="@+id/PastHourSteps" />
+
+    <TextView
+        android:id="@+id/PastHour"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:text="Past Hour"
+        app:layout_constraintBottom_toTopOf="@+id/PastHourButton"
+        app:layout_constraintEnd_toEndOf="@+id/PastHourButton"
+        app:layout_constraintStart_toStartOf="@+id/PastHourButton" />
+
+    <TextView
+        android:id="@+id/Projected"
+        android:layout_width="wrap_content"
+        android:layout_height="16dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:text="Projected"
+        app:layout_constraintBottom_toTopOf="@+id/ProjectedButton"
+        app:layout_constraintEnd_toEndOf="@+id/ProjectedButton"
+        app:layout_constraintStart_toStartOf="@+id/ProjectedButton" />
+
+    <Button
+        android:id="@+id/Account"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:text="Account"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/PastHourSteps"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Past Hour"
+        app:layout_constraintBottom_toBottomOf="@+id/PastHourButton"
+        app:layout_constraintEnd_toEndOf="@+id/PastHourButton"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="@+id/PastHourButton"
+        app:layout_constraintTop_toBottomOf="@+id/PastHour"
+        app:layout_constraintVertical_bias="1.0" />
+
+    <TextView
+        android:id="@+id/ProjectedSteps"
+        android:layout_width="105dp"
+        android:layout_height="56dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Projected"
+        android:textAlignment="center"
+        app:layout_constraintBottom_toBottomOf="@+id/ProjectedButton"
+        app:layout_constraintEnd_toEndOf="@+id/ProjectedButton"
+        app:layout_constraintStart_toStartOf="@+id/ProjectedButton"
+        app:layout_constraintTop_toTopOf="@+id/ProjectedButton" />
+
+    <TextView
+        android:id="@+id/textView8"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:text="Steps/Goal"
+        app:layout_constraintBottom_toTopOf="@+id/StepsButton"
+        app:layout_constraintEnd_toEndOf="@+id/StepsButton"
+        app:layout_constraintStart_toStartOf="@+id/StepsButton" />
 
 </android.support.constraint.ConstraintLayout>
