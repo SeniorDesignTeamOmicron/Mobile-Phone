@@ -7,7 +7,7 @@
     android:layout_height="match_parent">
 
     <EditText
-        android:id="@+id/editText"
+        android:id="@+id/Username"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:ems="10"
@@ -17,46 +17,61 @@
         tools:layout_editor_absoluteY="102dp" />
 
     <EditText
-        android:id="@+id/editText2"
+        android:id="@+id/Password"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:ems="10"
         android:hint="Password"
         android:inputType="textPersonName"
-        app:layout_constraintEnd_toEndOf="@+id/editText"
+        app:layout_constraintEnd_toEndOf="@+id/Username"
         app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/editText"
-        app:layout_constraintTop_toBottomOf="@+id/editText" />
+        app:layout_constraintStart_toStartOf="@+id/Username"
+        app:layout_constraintTop_toBottomOf="@+id/Username" />
 
     <Button
-        android:id="@+id/button"
+        android:id="@+id/FBLogin"
         android:layout_width="216dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="Log in With Facebook"
-        app:layout_constraintEnd_toEndOf="@+id/editText2"
+        app:layout_constraintEnd_toEndOf="@+id/Password"
         app:layout_constraintHorizontal_bias="0.111"
-        app:layout_constraintStart_toStartOf="@+id/editText2"
-        app:layout_constraintTop_toBottomOf="@+id/editText2" />
+        app:layout_constraintStart_toStartOf="@+id/Password"
+        app:layout_constraintTop_toBottomOf="@+id/Password" />
 
     <Button
-        android:id="@+id/button2"
+        android:id="@+id/GoogleLogin"
         android:layout_width="213dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="Log in With Google"
-        app:layout_constraintEnd_toEndOf="@+id/button"
+        app:layout_constraintEnd_toEndOf="@+id/FBLogin"
         app:layout_constraintHorizontal_bias="0.461"
-        app:layout_constraintStart_toStartOf="@+id/button"
-        app:layout_constraintTop_toBottomOf="@+id/button" />
+        app:layout_constraintStart_toStartOf="@+id/FBLogin"
+        app:layout_constraintTop_toBottomOf="@+id/FBLogin" />
 
     <Button
-        android:id="@+id/button3"
+        android:id="@+id/LogIn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="Log In"
-        app:layout_constraintTop_toBottomOf="@+id/button2"
+        app:layout_constraintTop_toBottomOf="@+id/GoogleLogin"
         tools:layout_editor_absoluteX="148dp" />
+
+    <TextView
+        android:id="@+id/CreateAccount"
+        android:layout_width="wrap_content"
+        android:layout_height="15dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Create Account"
+        android:textAllCaps="false"
+        android:textColor="@android:color/holo_blue_dark"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@+id/LogIn"
+        app:layout_constraintStart_toStartOf="@+id/LogIn"
+        app:layout_constraintTop_toBottomOf="@+id/LogIn" />
 </android.support.constraint.ConstraintLayout>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:id="@+id/sneakers"
+        android:title="Sneakers"/>
+    <item android:id="@+id/heels"
+        android:title="Heels" />
+    <item android:id="@+id/boots"
+        android:title="Boots" />
+    <item android:id="@+id/tennis_shoes"
+        android:title="Tennis Shoes" />
+</menu>
