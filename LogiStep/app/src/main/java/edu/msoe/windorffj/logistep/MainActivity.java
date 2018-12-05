@@ -1,11 +1,6 @@
 package edu.msoe.windorffj.logistep;
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
+
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -16,24 +11,24 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.PopupMenu;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    BluetoothAdapter mBluetoothAdapter;
-    Set<BluetoothDevice> pairedDevices;
-    Map<String, BluetoothDevice> myDevices;
-    boolean connectFlag;
-    int stepGoal = 10000;
-    int steps;
-    String username;
-    String password;
+    Integer stepGoal = 10000;
+    Integer steps = 0;
+    List<String> usernames;
+    List<String> passwords;
+    int c_account;
     Date today;
     String pressed = null;
+    Foot right;
+    Foot left;
 
 
     @Override
@@ -41,7 +36,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         //set the login if the username is not saved otherwise just log in
-        if(username == null){
+        if(usernames == null){
+            c_account = 0;
             setContentView(R.layout.login);
             Button log = (Button)findViewById(R.id.LogIn);
             log.setOnClickListener(new View.OnClickListener() {
@@ -49,9 +45,19 @@ public class MainActivity extends AppCompatActivity {
                 public void onClick(View v) {
                     EditText un = (EditText)findViewById(R.id.Username);
                     EditText pw = (EditText)findViewById(R.id.Password);
-                    login(un.getText().toString(),pw.getText().toString());
+                    if(un.getText().toString() != null && pw.getText().toString() != null) {
+                        login(un.getText().toString(), pw.getText().toString());
+                    } else {
+                        CharSequence text = "Enter a Username and Password";
+                        int duration = Toast.LENGTH_SHORT;
+
+                        Toast toast = Toast.makeText(MainActivity.this, text, duration);
+                        toast.show();
+                    }
                 }
             });
+            usernames = new ArrayList<String>();
+            passwords = new ArrayList<String>();
         } else  {
             setContentView(R.layout.activity_main);
         }
@@ -66,46 +72,25 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        TextView st = (TextView)findViewById(R.id.Steps);
-        st.setText(steps);
-        st.bringToFront();
+        right = new Foot("Right",this);
+        left = new Foot("Left",this);
 
-        TextView go = (TextView)findViewById(R.id.Goal);
-        go.setText(stepGoal);
-        go.bringToFront();
-
-
-        myDevices.put("")
-
-        connectFlag = false;
-
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (mBluetoothAdapter == null) {
-            // Device doesn't support Bluetooth
-        }
-
-        if (!mBluetoothAdapter.isEnabled()) {
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, 10); //request code may need to change
-        }
-
-        pairedDevices = mBluetoothAdapter.getBondedDevices();
-
-        if (pairedDevices.size() > 0) {
-            // There are paired devices. Get the name and address of each paired device.
-            for (BluetoothDevice device : pairedDevices) {
-                String deviceName = device.getName();
-                String deviceHardwareAddress = device.getAddress(); // MAC address
-            }
-        }
 
     }
 
-    public void typePopup(View v){
+    public void typePopup(final View v){
         PopupMenu popup = new PopupMenu(this, v);
         MenuInflater inflater = popup.getMenuInflater();
         inflater.inflate(R.menu.type_menu, popup.getMenu());
         popup.show();
+        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                Button b = (Button) v;
+                b.setText(item.getTitle().toString());
+                return true;
+            }
+        });
     }
 
     public void shoeConnectionPopup(final View v){
@@ -117,73 +102,87 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
                 String selected = item.getTitle().toString();
-                if(myDevices.get(v.getTag().toString()) != null){
-                    //TODO: if it is connect, connect to this spot
-                    // if disconnect, make the key null
+                if(selected.equals("Connect")){
+                    if(v.getTag().equals("RightFoot")){
+                        right.bt_connect();
+                    } else if(v.getTag().equals("LeftFoot")) {
+                        left.bt_connect();
+                    }
                 } else {
-                    //TODO: if connect, connect
-                    //if disconnect, do nothing
+                    if(v.getTag().equals("RightFoot")){
+                        right.bt_disconnect(right.get_devices().get(0));
+                    } else if(v.getTag().equals("LeftFoot")) {
+                        left.bt_disconnect(left.get_devices().get(0));
+                    }
                 }
                 return true;
             }
         });
     }
 
-    public void accountPopup(View v){
+    public void accountPopup(final View v){
         PopupMenu popup = new PopupMenu(this, v);
         MenuInflater inflater = popup.getMenuInflater();
         inflater.inflate(R.menu.shoe_connection, popup.getMenu());
         popup.show();
+        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                String selected = item.getTitle().toString();
+                if(selected.equals("Logout")){
+                    setContentView(R.layout.login);
+                } else if(selected.equals("Change Account")){
+                    PopupMenu popup = new PopupMenu(MainActivity.this, v);
+                    MenuInflater inflater = popup.getMenuInflater();
+                    inflater.inflate(R.menu.account_menu, popup.getMenu());
+                    popup.show();
+                    popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(MenuItem item) {
+                            c_account = item.getItemId();
+                            return true;
+                        }
+                    });
+                    Menu mine = popup.getMenu();
+                    for(int i = 0; i < usernames.size(); i++){
+                        mine.add(usernames.get(i));
+                    }
+                }
+                return true;
+            }
+        });
     }
 
     private void login(String m_username, String m_password){
-        username = m_username;
-        password = m_password;
-        setContentView(R.layout.activity_main);
-    }
-
-    //the connect button was pressed
-    public void bt_connect(String foot){
-
-        //start discovering
-
-        pressed = foot;
-
-        //first need to stop a current discovery
-        if(mBluetoothAdapter.isDiscovering()){
-            mBluetoothAdapter.cancelDiscovery();
+        //TODO: Add authentication with server for user.
+        if(usernames.contains(m_username)){
+            for(int i = 0; i < usernames.size(); i++){
+                if(usernames.get(i).equals(m_username)){
+                    c_account = i;
+                }
+            }
+        } else {
+            usernames.add(m_username);
+            passwords.add(m_password);
+            c_account = usernames.size()-1;
         }
+        setContentView(R.layout.activity_main);
 
-        //then start again
-        mBluetoothAdapter.startDiscovery();
+        TextView st = (TextView)findViewById(R.id.Steps);
+        st.setText(steps.toString());
+        st.bringToFront();
 
-        while(mBluetoothAdapter.isDiscovering()); //wait while it is still discovering.
-
-        // Register for broadcasts when a device is discovered.
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        registerReceiver(mReceiver, filter);
-        connectFlag = true;
+        TextView go = (TextView)findViewById(R.id.Goal);
+        go.setText(stepGoal.toString());
+        go.bringToFront();
     }
 
-
-
-    // Create a BroadcastReceiver for ACTION_FOUND.
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                // Discovery has found a device. Get the BluetoothDevice
-                // object and its info from the Intent.
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                String deviceName = device.getName();
-                String deviceHardwareAddress = device.getAddress(); // MAC address
-                addDevice(pressed,device);
+    private void change_account(String username){
+        for(int i = 0; i < usernames.size(); i++){
+            if(usernames.get(i).equals(username)){
+                c_account = i;
             }
         }
-    };
-
-    private void addDevice(String key, BluetoothDevice device){
-        myDevices.put(key,device);
     }
 
     @Override
@@ -192,8 +191,12 @@ public class MainActivity extends AppCompatActivity {
 
         // Don't forget to unregister the ACTION_FOUND receiver.
         //only if the connect button was used.
-        if(connectFlag) {
-            unregisterReceiver(mReceiver);
+        if(right.check_connect()) {
+            right.unregister();
+        }
+
+        if(left.check_connect()) {
+            left.unregister();
         }
     }
 }
