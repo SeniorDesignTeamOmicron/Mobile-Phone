@@ -1,178 +1,171 @@
 package edu.msoe.windorffj.logistep;
 
-import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothGattService;
-import android.content.BroadcastReceiver;
+import android.bluetooth.BluetoothSocket;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.Handler;
-import android.os.Message;
+import android.os.ParcelUuid;
+import android.os.SystemClock;
+import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.AdapterView;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.util.UUID;
+
+import static edu.msoe.windorffj.logistep.MainActivity.BTMODULEUUID;
+import static edu.msoe.windorffj.logistep.MainActivity.mBTAdapter;
 
 public class Foot {
-    private BluetoothAdapter mBluetoothAdapter;
-    private Set<BluetoothDevice> pairedDevices;
-    private boolean connectFlag = false;
     private String name;
-    private List<BluetoothDevice> myDevices;
-    private Context context;
-    public static final int REQUEST_CONNECT_DEVICE = 1;
-    private static final int REQUEST_ENABLE_BT = 0;
-    private BluetoothDataService mDataService = null;
-    private String mConnectedDeviceName = null;
+    private static BluetoothDevice myDevice;
+    public static Context context;
 
-    public static final int MESSAGE_STATE_CHANGE = 1;
-    public static final int MESSAGE_READ = 2;
-    public static final int MESSAGE_DEVICE_NAME = 4;
-    public static final int MESSAGE_TOAST = 5;
-    public static final String DEVICE_NAME = "device_name";
-    public static final String TOAST = "toast";
+    private static final int MESSAGE_READ = 2;
 
 
-    public Foot(String name, Context context){
+    /**
+     * Initializer for the foot object.
+     * starts the bluetooth.
+     * @param name What the name of the foot is
+     * @param context The application context form the MainActivity
+     */
+    Foot(String name, Context context){
 
         this.context = context;
 
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (mBluetoothAdapter == null) {
-            // Device doesn't support Bluetooth
-        }
-
-        //if (!mBluetoothAdapter.isEnabled()) {
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            ((Activity)this.context).startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT); //request code may need to change
-            Toast.makeText(this.context, "Turned on",Toast.LENGTH_LONG).show();
-        //}
-
-        pairedDevices = mBluetoothAdapter.getBondedDevices();
-
         this.name = name;
-        myDevices = new ArrayList<BluetoothDevice>();
-
-        mDataService = new BluetoothDataService(this.context,mHandler);
     }
 
     //the connect button was pressed
-    public void bt_connect(){
 
-        //TODO: check myDevices and connect if it is not empty
-        //TODO: start the bluetooth service here
+    static AdapterView.OnItemClickListener mDeviceClickListener = new AdapterView.OnItemClickListener() {
+        public void onItemClick(AdapterView<?> av, View v, int arg2, long arg3) {
 
-        if (mBluetoothAdapter.getScanMode() !=
-                BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
-            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
-            context.startActivity(discoverableIntent);
-        }
-
-        Intent serverIntent = new Intent(context, DeviceListActivity.class);
-        ((Activity)this.context).startActivityForResult(serverIntent, REQUEST_ENABLE_BT); //request code may need to change
-
-    }
-
-    public void bt_disconnect(BluetoothDevice device){
-        myDevices.remove(device);
-    }
-
-    // Create a BroadcastReceiver for ACTION_FOUND.
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                // Discovery has found a device. Get the BluetoothDevice
-                // object and its info from the Intent.
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                String deviceName = device.getName();
-                String deviceHardwareAddress = device.getAddress(); // MAC address
-                addDevice(device);
-
+            if(!mBTAdapter.isEnabled()) {
+                Toast.makeText(context, "Bluetooth not on", Toast.LENGTH_SHORT).show();
+                return;
             }
+
+            //Toast.makeText(context, "Connecting...", Toast.LENGTH_SHORT).show();
+            // Get the device MAC address, which is the last 17 chars in the View
+            String info = ((TextView) v).getText().toString();
+            final String address = info.substring(info.length() - 17);
+            final String name = info.substring(0,info.length() - 17);
+
+            // Spawn a new thread to avoid blocking the GUI one
+            new Thread()
+            {
+                public void run() {
+                    boolean fail = false;
+
+                    myDevice = mBTAdapter.getRemoteDevice(address);
+
+                    mBTAdapter.cancelDiscovery();
+
+
+                    try {
+                        MainActivity.mBTSocket = createBluetoothSocket(myDevice);
+                    } catch (IOException e) {
+                        fail = true;
+                        Toast.makeText(context, "Socket creation failed", Toast.LENGTH_SHORT).show();
+                    }
+                    // Establish the Bluetooth socket connection.
+                    try {
+                        MainActivity.mBTSocket.connect();
+                    } catch (IOException e) {
+                        try {
+                            fail = true;
+                            MainActivity.mBTSocket.close();
+                            MainActivity.mHandler.obtainMessage(MainActivity.CONNECTING_STATUS, -1, -1)
+                                    .sendToTarget();
+                        } catch (IOException e2) {
+                            //insert code to deal with this
+                            Toast.makeText(context, "Socket creation failed", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                    if(!fail) {
+                        MainActivity.mConnectedThread = new MainActivity.ConnectedThread(MainActivity.mBTSocket,name,context);
+                        MainActivity.mConnectedThread.start();
+
+                        MainActivity.mHandler.obtainMessage(MainActivity.CONNECTING_STATUS, 1, -1, name)
+                                .sendToTarget();
+                    }
+                }
+
+            }.start();
         }
     };
 
-    private void addDevice(BluetoothDevice device){
-        myDevices.add(device);
-        connectFlag = true;
+    void run_data(InputStream mmInStream){
+        byte[] buffer = new byte[1024];  // buffer store for the stream
+        int bytes; // bytes returned from read()
+        // Keep listening to the InputStream until an exception occurs
+        while (true) {
+            try {
+                // Read from the InputStream
+                bytes = mmInStream.available();
+                if(bytes != 0) {
+                    buffer = new byte[1024];
+                    SystemClock.sleep(100); //pause and wait for rest of data. Adjust this depending on your sending speed.
+                    bytes = mmInStream.available(); // how many bytes are ready to be read?
+                    bytes = mmInStream.read(buffer, 0, bytes); // record how many bytes we actually read
+                    MainActivity.mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer)
+                            .sendToTarget(); // Send the obtained bytes to the UI activity
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+
+                break;
+            }
+        }
     }
 
-    public boolean check_connect(){
-        return connectFlag;
+    private static BluetoothSocket createBluetoothSocket(BluetoothDevice device) throws IOException {
+        //TODO: This is where the UUID is. Must find out why this is failing.
+        UUID SERIAL_UUID;
+        device.fetchUuidsWithSdp();
+        final ParcelUuid[] temp = device.getUuids();
+        if(temp != null) {
+            SERIAL_UUID = temp[0].getUuid();
+        } else {
+            SERIAL_UUID = BTMODULEUUID;
+        }
+        try {
+            final Method m = device.getClass().getMethod("createInsecureRfcommSocketToServiceRecord", UUID.class);
+            return (BluetoothSocket) m.invoke(device, SERIAL_UUID);
+
+        } catch (Exception e) {
+            Log.e(MainActivity.TAG, "Could not create Insecure RFComm Connection",e);
+        }
+
+        return  device.createRfcommSocketToServiceRecord(SERIAL_UUID);
     }
 
+    /**
+     * disconnect the bluetooth
+     */
+    void bt_disconnect(){
+        myDevice = null;
+    }
+
+    /**
+     * gets the name of the  foot object
+     * @return our name
+     */
     public String get_name(){
         return name;
     }
 
-    public void unregister(){
-        context.unregisterReceiver(mReceiver);
-    }
-
-    public List<BluetoothDevice> get_devices(){
-        return myDevices;
-    }
-
-    // The Handler that gets information back from the BluetoothChatService
-    private final Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case MESSAGE_READ:
-                    byte[] readBuf = (byte[]) msg.obj;
-                    // construct a string from the valid bytes in the buffer
-                    String readMessage = new String(readBuf, 0, msg.arg1);
-                    //TODO: do something with the message from bluetooth
-                    CharSequence text = "Message received from Bluetooth " + readMessage;
-                    int duration = Toast.LENGTH_SHORT;
-
-                    Toast toast = Toast.makeText(context, text, duration);
-                    toast.show();
-                    break;
-                case MESSAGE_DEVICE_NAME:
-                    // save the connected device's name
-                    mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
-                    Toast.makeText(context, "Connected to "
-                            + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
-                    break;
-                case MESSAGE_TOAST:
-                    Toast.makeText(context, msg.getData().getString(TOAST),
-                            Toast.LENGTH_SHORT).show();
-                    break;
-            }
-        }
-    };
-
-    public void activityResult(int requestCode, int resultCode, Intent data){
-        switch (requestCode) {
-            case REQUEST_CONNECT_DEVICE:
-                // When DeviceListActivity returns with a device to connect
-                if (resultCode == Activity.RESULT_OK) {
-                    // Get the device MAC address
-                    String address = data.getExtras().getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
-                    // Get the BLuetoothDevice object
-                    BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
-                    // Attempt to connect to the device
-                    mDataService.connect(device);
-                }
-                break;
-            case REQUEST_ENABLE_BT:
-                // When the request to enable Bluetooth returns
-                if (resultCode == Activity.RESULT_OK) {
-                    // Bluetooth is now enabled, so set up a chat session
-                    mDataService = new BluetoothDataService(this.context,mHandler);
-                } else {
-                    // User did not enable Bluetooth or an error occured
-                    //Toast.makeText(this, R.string.bt_not_enabled_leaving, Toast.LENGTH_SHORT).show();
-                    //finish();
-                }
-        }
+    /**
+     * get the devices that are all on the connection list
+     * @return the list of devices myDevices
+     */
+    public BluetoothDevice get_device(){
+        return myDevice;
     }
 
 }
