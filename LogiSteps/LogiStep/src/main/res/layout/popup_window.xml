@@ -38,7 +38,44 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="Create"
+        app:layout_constraintEnd_toEndOf="@+id/rfootsize"
+        app:layout_constraintStart_toStartOf="@+id/rfootsize"
+        app:layout_constraintTop_toBottomOf="@+id/rfootsize" />
+
+    <EditText
+        android:id="@+id/email"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Email"
+        android:inputType="textPersonName"
         app:layout_constraintEnd_toEndOf="@+id/new_password"
         app:layout_constraintStart_toStartOf="@+id/new_password"
         app:layout_constraintTop_toBottomOf="@+id/new_password" />
+
+    <EditText
+        android:id="@+id/lfootsize"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Left Foot Size"
+        android:inputType="number"
+        app:layout_constraintEnd_toEndOf="@+id/email"
+        app:layout_constraintStart_toStartOf="@+id/email"
+        app:layout_constraintTop_toBottomOf="@+id/email" />
+
+    <EditText
+        android:id="@+id/rfootsize"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Right Foot Size"
+        android:inputType="number"
+        app:layout_constraintEnd_toEndOf="@+id/lfootsize"
+        app:layout_constraintStart_toStartOf="@+id/lfootsize"
+        app:layout_constraintTop_toBottomOf="@+id/lfootsize" />
+
 </android.support.constraint.ConstraintLayout>

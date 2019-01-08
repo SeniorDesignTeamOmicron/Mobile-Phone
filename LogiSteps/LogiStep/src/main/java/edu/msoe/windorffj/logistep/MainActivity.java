@@ -56,11 +56,13 @@ public class MainActivity extends AppCompatActivity {
     Integer stepGoal = 10000;
     Integer steps = 0;
     Set<String> usernames;
-    Set<String> passwords;
+    //Set<String> passwords;
+    Set<String> auths;
     int c_account;
     //Date today;
     public static Foot right;
     public static Foot left;
+    private ServerConnect server;
 
 
     // GUI Components
@@ -88,11 +90,11 @@ public class MainActivity extends AppCompatActivity {
 
         SharedPreferences sharedPref = this.getSharedPreferences(getString(R.string.shared_context),Context.MODE_PRIVATE);
         usernames = sharedPref.getStringSet(getString(R.string.username_save), new HashSet<String>());
-        passwords = sharedPref.getStringSet(getString(R.string.pw_save), new HashSet<String>());
+        //passwords = sharedPref.getStringSet(getString(R.string.pw_save), new HashSet<String>());
         steps = sharedPref.getInt(getString(R.string.step_save), 0);
 
         //set the login if the username is not saved otherwise just log in
-        if(usernames.size() == 0){
+        if(auths.size() == 0){
             c_account = 0;
             setContentView(R.layout.login);
             Button log = findViewById(R.id.LogIn);
@@ -113,7 +115,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
             usernames = new HashSet<>();
-            passwords = new HashSet<>();
+            //passwords = new HashSet<>();
+            auths = new HashSet<>();
         } else  {
             setContentView(R.layout.activity_main);
         }
@@ -146,6 +149,7 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         readMessage = new String((byte[]) msg.obj, "UTF-8");
                         Toast.makeText(getApplicationContext(),readMessage,Toast.LENGTH_SHORT).show();
+                        //TODO: post a step to the server here using the message
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }
@@ -170,6 +174,8 @@ public class MainActivity extends AppCompatActivity {
 
             bluetoothOn();
         }
+
+        server = new ServerConnect(this);
     }
 
     public void showBTDialog() {
@@ -397,6 +403,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void login(String m_username, String m_password){
         //TODO: Add authentication with server for user.
+        //TODO: make this get an authetication after sending username and password to server
+        String m_auth = server.getAuthentication();
+
+        if(!auths.contains(m_auth)){
+            auths.add(m_auth);
+        }
+
         if(usernames.contains(m_username)){
             int i = 0;
             Iterator it = usernames.iterator();
@@ -409,7 +422,7 @@ public class MainActivity extends AppCompatActivity {
             }
         } else {
             usernames.add(m_username);
-            passwords.add(m_password);
+            //passwords.add(m_password);
             c_account = usernames.size()-1;
         }
         setContentView(R.layout.activity_main);
@@ -444,8 +457,12 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 EditText un = popupView.findViewById(R.id.new_username);
                 EditText pw = popupView.findViewById(R.id.new_password);
+                EditText email = popupView.findViewById(R.id.email);
+                EditText lfoot = popupView.findViewById(R.id.lfootsize);
+                EditText rfoot = popupView.findViewById(R.id.rfootsize);
                 if(!un.getText().toString().equals("") && !pw.getText().toString().equals("")) {
                     popupWindow.dismiss();
+                    server.authenticate(un.getText().toString(),pw.getText().toString(),email.getText().toString(),Double.parseDouble(lfoot.getText().toString()),Double.parseDouble(rfoot.getText().toString()));
                     login(un.getText().toString(), pw.getText().toString());
                 } else {
                     CharSequence text = "Enter a Username and Password";
@@ -486,12 +503,14 @@ public class MainActivity extends AppCompatActivity {
 
         mConnectedThread.cancel();
 
+        server.closeThread();
+
         SharedPreferences sharedPref = this.getSharedPreferences(getString(R.string.shared_context),Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putInt(getString(R.string.step_save), steps);
         editor.putInt(getString(R.string.acc_save), c_account);
         editor.putStringSet(getString(R.string.username_save), usernames);
-        editor.putStringSet(getString(R.string.pw_save), passwords);
+        //editor.putStringSet(getString(R.string.pw_save), passwords);
         editor.apply();
 
     }
