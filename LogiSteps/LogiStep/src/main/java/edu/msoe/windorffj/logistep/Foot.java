@@ -13,31 +13,31 @@ import android.widget.AdapterView;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.UUID;
 
 import static edu.msoe.windorffj.logistep.MainActivity.BTMODULEUUID;
 import static edu.msoe.windorffj.logistep.MainActivity.mBTAdapter;
+import static edu.msoe.windorffj.logistep.MainActivity.mBTSocket;
 
 public class Foot {
-    private String name;
+    private static String bt_name;
     private static BluetoothDevice myDevice;
     public static Context context;
 
     private static final int MESSAGE_READ = 2;
+    private static final int MESSAGE_SEND = 1;
 
 
     /**
      * Initializer for the foot object.
      * starts the bluetooth.
-     * @param name What the name of the foot is
      * @param context The application context form the MainActivity
      */
-    Foot(String name, Context context){
+    Foot(Context context){
 
         this.context = context;
-
-        this.name = name;
     }
 
     //the connect button was pressed
@@ -64,31 +64,45 @@ public class Foot {
 
                     myDevice = mBTAdapter.getRemoteDevice(address);
 
+                    bt_name = myDevice.getName();
+
                     mBTAdapter.cancelDiscovery();
 
 
                     try {
-                        MainActivity.mBTSocket = createBluetoothSocket(myDevice);
+                        mBTSocket = createBluetoothSocket(myDevice);
                     } catch (IOException e) {
                         fail = true;
                         Toast.makeText(context, "Socket creation failed", Toast.LENGTH_SHORT).show();
                     }
                     // Establish the Bluetooth socket connection.
                     try {
-                        MainActivity.mBTSocket.connect();
+
+                        mBTSocket.connect();
                     } catch (IOException e) {
                         try {
-                            fail = true;
-                            MainActivity.mBTSocket.close();
-                            MainActivity.mHandler.obtainMessage(MainActivity.CONNECTING_STATUS, -1, -1)
-                                    .sendToTarget();
+                            try {
+                                Log.e("","trying fallback...");
+
+                                mBTSocket =(BluetoothSocket) myDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(myDevice,1);
+                                mBTSocket.connect();
+
+                                Log.e("","Connected");
+                            } catch (Exception e2) {
+                                Log.e("", "Couldn't establish Bluetooth connection!");
+                                fail = true;
+                                mBTSocket.close();
+                                MainActivity.mHandler.obtainMessage(MainActivity.CONNECTING_STATUS, -1, -1)
+                                        .sendToTarget();
+                            }
+
                         } catch (IOException e2) {
                             //insert code to deal with this
                             Toast.makeText(context, "Socket creation failed", Toast.LENGTH_SHORT).show();
                         }
                     }
                     if(!fail) {
-                        MainActivity.mConnectedThread = new MainActivity.ConnectedThread(MainActivity.mBTSocket,name,context);
+                        MainActivity.mConnectedThread = new MainActivity.ConnectedThread(mBTSocket,name,context);
                         MainActivity.mConnectedThread.start();
 
                         MainActivity.mHandler.obtainMessage(MainActivity.CONNECTING_STATUS, 1, -1, name)
@@ -126,23 +140,13 @@ public class Foot {
 
     private static BluetoothSocket createBluetoothSocket(BluetoothDevice device) throws IOException {
         //TODO: This is where the UUID is. Must find out why this is failing.
-        UUID SERIAL_UUID;
-        device.fetchUuidsWithSdp();
-        final ParcelUuid[] temp = device.getUuids();
-        if(temp != null) {
-            SERIAL_UUID = temp[0].getUuid();
-        } else {
-            SERIAL_UUID = BTMODULEUUID;
+        while(mBTAdapter.isDiscovering());
+        boolean tmp = device.fetchUuidsWithSdp();
+        UUID SERIAL_UUID = null;
+        if (tmp){
+            SERIAL_UUID = device.getUuids()[0].getUuid();
         }
-        try {
-            final Method m = device.getClass().getMethod("createInsecureRfcommSocketToServiceRecord", UUID.class);
-            return (BluetoothSocket) m.invoke(device, SERIAL_UUID);
-
-        } catch (Exception e) {
-            Log.e(MainActivity.TAG, "Could not create Insecure RFComm Connection",e);
-        }
-
-        return  device.createRfcommSocketToServiceRecord(SERIAL_UUID);
+        return device.createRfcommSocketToServiceRecord(SERIAL_UUID);
     }
 
     /**
@@ -157,7 +161,7 @@ public class Foot {
      * @return our name
      */
     public String get_name(){
-        return name;
+        return bt_name;
     }
 
     /**

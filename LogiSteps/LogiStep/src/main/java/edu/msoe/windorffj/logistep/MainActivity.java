@@ -56,13 +56,14 @@ public class MainActivity extends AppCompatActivity {
     Integer stepGoal = 10000;
     Integer steps = 0;
     Set<String> usernames;
-    //Set<String> passwords;
+    Set<String> passwords;
     Set<String> auths;
     int c_account;
     //Date today;
     public static Foot right;
     public static Foot left;
     private ServerConnect server;
+    public static String server_address;
 
 
     // GUI Components
@@ -90,8 +91,10 @@ public class MainActivity extends AppCompatActivity {
 
         SharedPreferences sharedPref = this.getSharedPreferences(getString(R.string.shared_context),Context.MODE_PRIVATE);
         usernames = sharedPref.getStringSet(getString(R.string.username_save), new HashSet<String>());
-        //passwords = sharedPref.getStringSet(getString(R.string.pw_save), new HashSet<String>());
+        passwords = sharedPref.getStringSet(getString(R.string.pw_save), new HashSet<String>());
         steps = sharedPref.getInt(getString(R.string.step_save), 0);
+
+        auths = new HashSet<>();
 
         //set the login if the username is not saved otherwise just log in
         if(auths.size() == 0){
@@ -115,8 +118,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
             usernames = new HashSet<>();
-            //passwords = new HashSet<>();
-            auths = new HashSet<>();
+            passwords = new HashSet<>();
         } else  {
             setContentView(R.layout.activity_main);
         }
@@ -131,8 +133,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }*/
 
-        right = new Foot("Right",this);
-        left = new Foot("Left",this);
+        right = new Foot(this);
+        left = new Foot(this);
 
         mBTAdapter = BluetoothAdapter.getDefaultAdapter(); // get a handle on the bluetooth radio
 
@@ -150,6 +152,7 @@ public class MainActivity extends AppCompatActivity {
                         readMessage = new String((byte[]) msg.obj, "UTF-8");
                         Toast.makeText(getApplicationContext(),readMessage,Toast.LENGTH_SHORT).show();
                         //TODO: post a step to the server here using the message
+                        //format:
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }
@@ -174,8 +177,6 @@ public class MainActivity extends AppCompatActivity {
 
             bluetoothOn();
         }
-
-        server = new ServerConnect(this);
     }
 
     public void showBTDialog() {
@@ -386,6 +387,7 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public boolean onMenuItemClick(MenuItem item) {
                             c_account = item.getItemId();
+                            change_account(item.toString());
                             return true;
                         }
                     });
@@ -402,8 +404,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void login(String m_username, String m_password){
-        //TODO: Add authentication with server for user.
-        //TODO: make this get an authetication after sending username and password to server
+        server = new ServerConnect(this, m_username, m_password);
         String m_auth = server.getAuthentication();
 
         if(!auths.contains(m_auth)){
@@ -422,7 +423,7 @@ public class MainActivity extends AppCompatActivity {
             }
         } else {
             usernames.add(m_username);
-            //passwords.add(m_password);
+            passwords.add(m_password);
             c_account = usernames.size()-1;
         }
         setContentView(R.layout.activity_main);
@@ -497,6 +498,56 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void server_connect(View v) {
+        // inflate the layout of the popup window
+        LayoutInflater inflater = (LayoutInflater)
+                getSystemService(LAYOUT_INFLATER_SERVICE);
+        final View popupView = inflater.inflate(R.layout.server_popup, null);
+
+        // create the popup window
+        int width = LinearLayout.LayoutParams.WRAP_CONTENT;
+        int height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        final PopupWindow popupWindow = new PopupWindow(popupView, width, height, true);
+
+        // show the popup window
+        // which view you pass in doesn't matter, it is only used for the window tolken
+        popupWindow.showAtLocation(v, Gravity.CENTER, 0, 0);
+
+        Button log = popupView.findViewById(R.id.create);
+        log.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Button btn = popupView.findViewById(R.id.go_server);
+                btn.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        EditText ip = popupView.findViewById(R.id.ip_address);
+                        server_address = ip.getText().toString();
+                        popupWindow.dismiss();
+                    }
+                });
+            }
+        });
+
+        // dismiss the popup window when touched
+        popupView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                v.performClick();
+                popupWindow.dismiss();
+                return true;
+            }
+        });
+        Iterator it_u = usernames.iterator();
+        Iterator it_p = passwords.iterator();
+        for (int i = 0; i < c_account; i++) {
+            it_u.next();
+            it_p.next();
+        }
+        server = new ServerConnect(this, it_u.next().toString(), it_p.next().toString());
+        //TODO: get the ack and change the color of the Link button fi connected
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -510,7 +561,7 @@ public class MainActivity extends AppCompatActivity {
         editor.putInt(getString(R.string.step_save), steps);
         editor.putInt(getString(R.string.acc_save), c_account);
         editor.putStringSet(getString(R.string.username_save), usernames);
-        //editor.putStringSet(getString(R.string.pw_save), passwords);
+        editor.putStringSet(getString(R.string.pw_save), passwords);
         editor.apply();
 
     }
