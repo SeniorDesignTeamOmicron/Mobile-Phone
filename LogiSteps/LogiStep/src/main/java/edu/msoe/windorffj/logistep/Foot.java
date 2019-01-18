@@ -3,7 +3,6 @@ package edu.msoe.windorffj.logistep;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
-import android.os.ParcelUuid;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
@@ -13,11 +12,7 @@ import android.widget.AdapterView;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.UUID;
-
-import static edu.msoe.windorffj.logistep.MainActivity.BTMODULEUUID;
 import static edu.msoe.windorffj.logistep.MainActivity.mBTAdapter;
 import static edu.msoe.windorffj.logistep.MainActivity.mBTSocket;
 
