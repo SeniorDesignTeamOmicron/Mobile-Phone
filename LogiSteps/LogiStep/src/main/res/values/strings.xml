@@ -28,4 +28,6 @@
     <string name="pw_save">Passwords</string>
     <string name="shared_context">Shared Context</string>
     <string name="acc_save">Account Save</string>
+    <string name="auths_save">Auths_Save</string>
+    <string name="server_connect">Server_Connect</string>
 </resources>

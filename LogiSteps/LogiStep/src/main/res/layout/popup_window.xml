@@ -38,9 +38,9 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="Create"
-        app:layout_constraintEnd_toEndOf="@+id/rfootsize"
-        app:layout_constraintStart_toStartOf="@+id/rfootsize"
-        app:layout_constraintTop_toBottomOf="@+id/rfootsize" />
+        app:layout_constraintEnd_toEndOf="@+id/s_goal"
+        app:layout_constraintStart_toStartOf="@+id/s_goal"
+        app:layout_constraintTop_toBottomOf="@+id/s_goal" />
 
     <EditText
         android:id="@+id/email"
@@ -77,5 +77,65 @@
         app:layout_constraintEnd_toEndOf="@+id/lfootsize"
         app:layout_constraintStart_toStartOf="@+id/lfootsize"
         app:layout_constraintTop_toBottomOf="@+id/lfootsize" />
+
+    <EditText
+        android:id="@+id/f_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="First Name"
+        android:inputType="textPersonName"
+        app:layout_constraintEnd_toEndOf="@+id/rfootsize"
+        app:layout_constraintStart_toStartOf="@+id/rfootsize"
+        app:layout_constraintTop_toBottomOf="@+id/rfootsize" />
+
+    <EditText
+        android:id="@+id/l_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Last Name"
+        android:inputType="textPersonName"
+        app:layout_constraintEnd_toEndOf="@+id/f_name"
+        app:layout_constraintStart_toStartOf="@+id/f_name"
+        app:layout_constraintTop_toBottomOf="@+id/f_name" />
+
+    <EditText
+        android:id="@+id/height"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Height (inches)"
+        android:inputType="number"
+        app:layout_constraintEnd_toEndOf="@+id/l_name"
+        app:layout_constraintStart_toStartOf="@+id/l_name"
+        app:layout_constraintTop_toBottomOf="@+id/l_name" />
+
+    <EditText
+        android:id="@+id/weight"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Weight (lbs)"
+        android:inputType="number"
+        app:layout_constraintEnd_toEndOf="@+id/height"
+        app:layout_constraintStart_toStartOf="@+id/height"
+        app:layout_constraintTop_toBottomOf="@+id/height" />
+
+    <EditText
+        android:id="@+id/s_goal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Step Goal"
+        android:inputType="number"
+        app:layout_constraintEnd_toEndOf="@+id/weight"
+        app:layout_constraintStart_toStartOf="@+id/weight"
+        app:layout_constraintTop_toBottomOf="@+id/weight" />
 
 </android.support.constraint.ConstraintLayout>

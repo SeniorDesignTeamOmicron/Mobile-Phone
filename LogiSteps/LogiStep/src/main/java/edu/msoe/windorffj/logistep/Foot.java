@@ -20,9 +20,11 @@ public class Foot {
     private static String bt_name;
     private static BluetoothDevice myDevice;
     public static Context context;
+    public static boolean connected = false;
+    public static int foot; //0 is right, and 1 is left
 
     private static final int MESSAGE_READ = 2;
-    private static final int MESSAGE_SEND = 1;
+    private static final int MESSAGE_WRITE = 3;
 
 
     /**
@@ -30,8 +32,8 @@ public class Foot {
      * starts the bluetooth.
      * @param context The application context form the MainActivity
      */
-    Foot(Context context){
-
+    Foot(Context context, int foot){
+        this.foot = foot;
         this.context = context;
     }
 
@@ -97,6 +99,8 @@ public class Foot {
                         }
                     }
                     if(!fail) {
+                        connected = true;
+                        sendMessage(Long.toString(System.currentTimeMillis()));
                         MainActivity.mConnectedThread = new MainActivity.ConnectedThread(mBTSocket,name,context);
                         MainActivity.mConnectedThread.start();
 
@@ -122,7 +126,7 @@ public class Foot {
                     SystemClock.sleep(100); //pause and wait for rest of data. Adjust this depending on your sending speed.
                     bytes = mmInStream.available(); // how many bytes are ready to be read?
                     bytes = mmInStream.read(buffer, 0, bytes); // record how many bytes we actually read
-                    MainActivity.mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer)
+                    MainActivity.mHandler.obtainMessage(MESSAGE_READ, bytes, foot, buffer)
                             .sendToTarget(); // Send the obtained bytes to the UI activity
                 }
             } catch (IOException e) {
@@ -133,8 +137,21 @@ public class Foot {
         }
     }
 
+    public static void sendMessage(String message) {
+        // Check that we're actually connected before trying anything
+        if (!connected) {
+            Toast.makeText(context, "Cannot send. Bluetooth not connected", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // Check that there's actually something to send
+        if (message.length() > 0) {
+            // Get the message bytes and tell the BluetoothChatService to write
+            byte[] send = message.getBytes();
+            MainActivity.mConnectedThread.write(send);
+        }
+    }
+
     private static BluetoothSocket createBluetoothSocket(BluetoothDevice device) throws IOException {
-        //TODO: This is where the UUID is. Must find out why this is failing.
         while(mBTAdapter.isDiscovering());
         boolean tmp = device.fetchUuidsWithSdp();
         UUID SERIAL_UUID = null;

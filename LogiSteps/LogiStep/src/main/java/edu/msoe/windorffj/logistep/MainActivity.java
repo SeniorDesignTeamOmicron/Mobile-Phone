@@ -37,6 +37,7 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -75,8 +76,12 @@ public class MainActivity extends AppCompatActivity {
     // #defines for identifying shared types between calling functions
     public final static int REQUEST_ENABLE_BT = 1; // used to identify adding bluetooth names
     public final static int MESSAGE_READ = 2; // used in bluetooth handler to identify message update
+    public static final int MESSAGE_WRITE = 3;
     public final static int CONNECTING_STATUS = 3; // used in bluetooth handler to identify message status
 
+
+    public final static int RIGHT_FOOT = 0;
+    public final static int LEFT_FOOT = 1;
 
 
     @Override
@@ -86,9 +91,12 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences sharedPref = this.getSharedPreferences(getString(R.string.shared_context),Context.MODE_PRIVATE);
         usernames = sharedPref.getStringSet(getString(R.string.username_save), new HashSet<String>());
         passwords = sharedPref.getStringSet(getString(R.string.pw_save), new HashSet<String>());
+        auths = sharedPref.getStringSet(getString(R.string.auths_save),new HashSet<String>());
+        c_account = sharedPref.getInt(getString(R.string.acc_save),0);
         steps = sharedPref.getInt(getString(R.string.step_save), 0);
+        server_address = sharedPref.getString(getString(R.string.server_connect),"0.0.0.0");
 
-        auths = new HashSet<>();
+
 
         //set the login if the username is not saved otherwise just log in
         if(auths.size() == 0){
@@ -100,10 +108,12 @@ public class MainActivity extends AppCompatActivity {
                 public void onClick(View v) {
                     EditText un = findViewById(R.id.Username);
                     EditText pw = findViewById(R.id.Password);
-                    if(!un.getText().toString().equals("") && !pw.getText().toString().equals("")) {
+                    EditText ip = findViewById(R.id.IP_Address);
+                    if(!un.getText().toString().equals("") && !pw.getText().toString().equals("") && !ip.getText().toString().equals("")) {
+                        server_address = ip.getText().toString();
                         login(un.getText().toString(), pw.getText().toString());
                     } else {
-                        CharSequence text = "Enter a Username and Password";
+                        CharSequence text = "Enter a Username, Password, and IP address";
                         int duration = Toast.LENGTH_SHORT;
 
                         Toast toast = Toast.makeText(MainActivity.this, text, duration);
@@ -127,8 +137,11 @@ public class MainActivity extends AppCompatActivity {
             }
         }*/
 
-        right = new Foot(this);
-        left = new Foot(this);
+        right = new Foot(this,RIGHT_FOOT);
+        left = new Foot(this,LEFT_FOOT);
+        auths = new HashSet<>();
+
+        server = new ServerConnect(this);
 
         mBTAdapter = BluetoothAdapter.getDefaultAdapter(); // get a handle on the bluetooth radio
 
@@ -139,8 +152,13 @@ public class MainActivity extends AppCompatActivity {
 
         mHandler = new Handler(new Handler.Callback(){
             public boolean handleMessage(android.os.Message msg){
-                //TODO: use the message read to find which foot it is
                 if(msg.what == MESSAGE_READ){
+                    //TODO: set a variable to be used to use when sending
+                    if(msg.arg2 == RIGHT_FOOT) { // it is the right foot
+
+                    } else if(msg.arg2 == LEFT_FOOT) { //it is the left
+
+                    }
                     String readMessage;
                     try {
                         readMessage = new String((byte[]) msg.obj, "UTF-8");
@@ -150,6 +168,9 @@ public class MainActivity extends AppCompatActivity {
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }
+                } else if(msg.what == MESSAGE_WRITE){
+                    byte[] writeBuf = (byte[]) msg.obj;
+
                 }
 
                 if(msg.what == CONNECTING_STATUS){
@@ -283,12 +304,14 @@ public class MainActivity extends AppCompatActivity {
     public static class ConnectedThread extends Thread {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
+        private final OutputStream outputStream;
         private String name;
         private Context context;
 
         ConnectedThread(BluetoothSocket socket, String name, Context context) {
             mmSocket = socket;
             InputStream tmpIn = null;
+            OutputStream tmpOut = null;
             this.name = name;
             this.context = context;
 
@@ -296,11 +319,13 @@ public class MainActivity extends AppCompatActivity {
             // member streams are final
             try {
                 tmpIn = socket.getInputStream();
+                tmpOut = socket.getOutputStream();
             } catch (IOException e) {
                 Toast.makeText(context,"IO Exception",Toast.LENGTH_SHORT).show();
             }
 
             mmInStream = tmpIn;
+            outputStream = tmpOut;
         }
 
         public void run() {
@@ -308,6 +333,16 @@ public class MainActivity extends AppCompatActivity {
                 MainActivity.right.run_data(mmInStream);
             } else if(name.equals("Left")){
                 MainActivity.left.run_data(mmInStream);
+            }
+        }
+
+        // write to OutputStream
+        public void write(byte[] buffer) {
+            try {
+                outputStream.write(buffer);
+                mHandler.obtainMessage(MainActivity.MESSAGE_WRITE, -1, -1,
+                        buffer).sendToTarget();
+            } catch (IOException e) {
             }
         }
 
@@ -398,7 +433,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void login(String m_username, String m_password){
-        server = new ServerConnect(this, m_username, m_password);
+        //TODO: get the ack and change the color of the Link button if connected
+        server.getUser(m_username,m_password);
         String m_auth = server.getAuthentication();
 
         if(!auths.contains(m_auth)){
@@ -455,12 +491,20 @@ public class MainActivity extends AppCompatActivity {
                 EditText email = popupView.findViewById(R.id.email);
                 EditText lfoot = popupView.findViewById(R.id.lfootsize);
                 EditText rfoot = popupView.findViewById(R.id.rfootsize);
-                if(!un.getText().toString().equals("") && !pw.getText().toString().equals("")) {
+                EditText f_name = popupView.findViewById(R.id.f_name);
+                EditText l_name = popupView.findViewById(R.id.l_name);
+                EditText height = popupView.findViewById(R.id.height);
+                EditText weight = popupView.findViewById(R.id.weight);
+                EditText s_goal = popupView.findViewById(R.id.s_goal);
+                if(!un.getText().toString().equals("") && !pw.getText().toString().equals("") && !email.getText().toString().equals("") && !lfoot.getText().toString().equals("") &&
+                        !rfoot.getText().toString().equals("") && !f_name.getText().toString().equals("") && !l_name.getText().toString().equals("") && !height.getText().toString().equals("") &&
+                        !weight.getText().toString().equals("") && !s_goal.getText().toString().equals("")) {
                     popupWindow.dismiss();
-                    server.authenticate(un.getText().toString(),pw.getText().toString(),email.getText().toString(),Double.parseDouble(lfoot.getText().toString()),Double.parseDouble(rfoot.getText().toString()));
+                    server.authenticate(un.getText().toString(),pw.getText().toString(),email.getText().toString(),Double.parseDouble(lfoot.getText().toString()),Double.parseDouble(rfoot.getText().toString()),
+                            f_name.getText().toString(),l_name.getText().toString(),Integer.parseInt(height.getText().toString()),Integer.parseInt(weight.getText().toString()),Integer.parseInt(s_goal.getText().toString()));
                     login(un.getText().toString(), pw.getText().toString());
                 } else {
-                    CharSequence text = "Enter a Username and Password";
+                    CharSequence text = "Enter a All Fields";
                     int duration = Toast.LENGTH_SHORT;
 
                     Toast toast = Toast.makeText(MainActivity.this, text, duration);
@@ -538,8 +582,7 @@ public class MainActivity extends AppCompatActivity {
             it_u.next();
             it_p.next();
         }
-        server = new ServerConnect(this, it_u.next().toString(), it_p.next().toString());
-        //TODO: get the ack and change the color of the Link button fi connected
+        server = new ServerConnect(this);
     }
 
     @Override
@@ -548,14 +591,14 @@ public class MainActivity extends AppCompatActivity {
 
         mConnectedThread.cancel();
 
-        server.closeThread();
-
         SharedPreferences sharedPref = this.getSharedPreferences(getString(R.string.shared_context),Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putInt(getString(R.string.step_save), steps);
         editor.putInt(getString(R.string.acc_save), c_account);
         editor.putStringSet(getString(R.string.username_save), usernames);
         editor.putStringSet(getString(R.string.pw_save), passwords);
+        editor.putStringSet(getString(R.string.auths_save),auths);
+        editor.putString(getString(R.string.server_connect),server_address);
         editor.apply();
 
     }
