@@ -12,6 +12,9 @@ import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 
 import java.io.IOException;
+import java.time.DayOfWeek;
+import java.time.Month;
+import java.time.Year;
 import java.time.ZonedDateTime;
 import java.util.Base64;
 
@@ -107,29 +110,89 @@ public class ServerConnect {
         return authorization;
     }
 
-    void getUser(String un, String pw){
+    Response getUser(final String un, final String pw) {
         String mid = un + ":" + pw;
         Base64.Encoder encode = Base64.getEncoder();
         byte[] authEncBytes = encode.encode(mid.getBytes());
-        authorization = new String (authEncBytes);
+        authorization = new String(authEncBytes);
 
+        class run implements Runnable {
+
+            volatile Response response;
+
+            @Override
+            public void run() {
+                try {
+                    OkHttpClient client = new OkHttpClient();
+
+                    Request request = new Request.Builder()
+                            .url(sUrl + "user/" + un + "/")
+                            .get()
+                            .addHeader("Content-Type", "application/json")
+                            .addHeader("Authorization", "Basic " + authorization)
+                            .addHeader("cache-control", "no-cache")
+                            .addHeader("Postman-Token", "06ed0396-e727-4a14-a44b-74b4cd40b74b")
+                            .build();
+
+                    try {
+                        response = client.newCall(request).execute();
+                        //TODO: use the response to set up the data for the user
+                    } catch (IOException e) {
+                        Toast.makeText(context, "IO Exception receiving JSON: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            private Response get_response() {
+                return response;
+            }
+
+        }
+
+        run r = new run();
+
+        Thread thread = new Thread(r);
+
+        thread.start();
+        Response ret = null;
+        try {
+            thread.join();
+            ret = r.get_response();
+        } catch (InterruptedException e) {
+            Toast.makeText(context, "InterruptedException: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+
+        return ret;
+    }
+
+    public Response getSteps(){
+        ZonedDateTime zdt = ZonedDateTime.now();
+        Month m = zdt.getMonth();
+        int mm = m.getValue();
+        DayOfWeek d = zdt.getDayOfWeek();
+        int dd = d.getValue();
+        int yyyy = zdt.getYear();
+        String date = mm + "-" + dd + "-" + yyyy;
         OkHttpClient client = new OkHttpClient();
+        Response response = null;
 
         Request request = new Request.Builder()
-                .url("http://" + sUrl + "/api/users/")
+                .url(sUrl + "steps/summary/?date=" + date)
                 .get()
-                .addHeader("Content-Type", "application/json")
                 .addHeader("Authorization", "Basic " + authorization)
                 .addHeader("cache-control", "no-cache")
-                .addHeader("Postman-Token", "06ed0396-e727-4a14-a44b-74b4cd40b74b")
+                .addHeader("Postman-Token", "f0460bcb-615b-4f31-adfc-83ac9b8d85d9")
                 .build();
 
         try {
-            Response response = client.newCall(request).execute();
-            //TODO: use the response to set up the data for the user
+            response = client.newCall(request).execute();
+            //TODO: use response to get steps for the day
         } catch (IOException e){
-            Toast.makeText(context,"IO Exception receiving JSON: " + e.getMessage(),Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "IO Exception receiving JSON: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
+        return response;
     }
 
 }

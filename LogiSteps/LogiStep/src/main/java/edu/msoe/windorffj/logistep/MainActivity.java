@@ -35,6 +35,8 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.squareup.okhttp.Response;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -109,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
                     EditText ip = findViewById(R.id.IP_Address);
                     if(!un.getText().toString().equals("") && !pw.getText().toString().equals("") && !ip.getText().toString().equals("")) {
                         server_address = ip.getText().toString();
+                        server = new ServerConnect(MainActivity.this);
                         login(un.getText().toString(), pw.getText().toString());
                     } else {
                         CharSequence text = "Enter a Username, Password, and IP address";
@@ -129,8 +132,6 @@ public class MainActivity extends AppCompatActivity {
         left = new Foot(this,LEFT_FOOT);
         auths = new HashSet<>();
 
-        server = new ServerConnect(this);
-
         mBTAdapter = BluetoothAdapter.getDefaultAdapter(); // get a handle on the bluetooth radio
 
         // Ask for location permission if not already allowed
@@ -141,16 +142,15 @@ public class MainActivity extends AppCompatActivity {
         mHandler = new Handler(new Handler.Callback(){
             public boolean handleMessage(android.os.Message msg){
                 if(msg.what == MESSAGE_READ){
-                    //TODO: set a variable to be used to use when sending
+                    String foot = null;
                     if(msg.arg2 == RIGHT_FOOT) { // it is the right foot
-
+                        foot = "right";
                     } else if(msg.arg2 == LEFT_FOOT) { //it is the left
-
+                        foot = "left";
                     }
                     String readMessage;
-                    readMessage = new String((byte[]) msg.obj, StandardCharsets.UTF_8);
-                    Toast.makeText(getApplicationContext(),readMessage,Toast.LENGTH_SHORT).show();
                     //TODO: post a step to the server here using the message
+                    server.post_step(foot,0,0); //default for now
                     //format:
                 } else if(msg.what == MESSAGE_WRITE){
                     byte[] writeBuf = (byte[]) msg.obj;
@@ -418,38 +418,52 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void login(String m_username, String m_password){
-        //TODO: get the ack and change the color of the Link button if connected
-        server.getUser(m_username,m_password);
-        String m_auth = server.getAuthentication();
+        Response r = server.getUser(m_username,m_password);
+        if(r.code() == 200) {
+            String body = r.body().toString();
+            //TODO: see what the body looks like and use that for step goal
 
-        if(!auths.contains(m_auth)){
-            auths.add(m_auth);
-        }
+            r = server.getSteps();
+            body = r.body().toString();
+            //TODO: see what the body looks like and use that for steps and steps per hour
 
-        if(usernames.contains(m_username)){
-            int i = 0;
-            Iterator it = usernames.iterator();
-            while(it.hasNext()){
-                String acc = (String) it.next();
-                if(acc.equals(m_username)){
-                    c_account = i;
+            if(r.code() == 200) {
+                String m_auth = server.getAuthentication();
+
+                if (!auths.contains(m_auth)) {
+                    auths.add(m_auth);
                 }
-                i++;
+
+                if (usernames.contains(m_username)) {
+                    int i = 0;
+                    Iterator it = usernames.iterator();
+                    while (it.hasNext()) {
+                        String acc = (String) it.next();
+                        if (acc.equals(m_username)) {
+                            c_account = i;
+                        }
+                        i++;
+                    }
+                } else {
+                    usernames.add(m_username);
+                    passwords.add(m_password);
+                    c_account = usernames.size() - 1;
+                }
+                setContentView(R.layout.activity_main);
+
+                TextView st = findViewById(R.id.Steps);
+                st.setText(steps.toString());
+                st.bringToFront();
+
+                TextView go = findViewById(R.id.Goal);
+                go.setText(stepGoal.toString());
+                go.bringToFront();
+            } else {
+                Toast.makeText(this,"Error Code: " + r.code() + r.message(),Toast.LENGTH_SHORT).show();
             }
-        } else {
-            usernames.add(m_username);
-            passwords.add(m_password);
-            c_account = usernames.size()-1;
+        } else { //error code
+            Toast.makeText(this,"Error Code: " + r.code() + r.message(),Toast.LENGTH_SHORT).show();
         }
-        setContentView(R.layout.activity_main);
-
-        TextView st = findViewById(R.id.Steps);
-        st.setText(steps.toString());
-        st.bringToFront();
-
-        TextView go = findViewById(R.id.Goal);
-        go.setText(stepGoal.toString());
-        go.bringToFront();
     }
 
     public void create_account(View v){
