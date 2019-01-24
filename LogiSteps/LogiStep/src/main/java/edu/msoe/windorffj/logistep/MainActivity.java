@@ -38,11 +38,10 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -54,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
     Set<String> passwords;
     Set<String> auths;
     int c_account;
+
     //Date today;
     public static Foot right;
     public static Foot left;
@@ -70,8 +70,6 @@ public class MainActivity extends AppCompatActivity {
     public static Handler mHandler; // Our main handler that will receive callback notifications
     public static ConnectedThread mConnectedThread; // bluetooth background worker thread to send and receive data
     public static BluetoothSocket mBTSocket = null; // bi-directional client-to-client data path
-
-    public static final UUID BTMODULEUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); // "random" unique identifier
 
     // #defines for identifying shared types between calling functions
     public final static int REQUEST_ENABLE_BT = 1; // used to identify adding bluetooth names
@@ -127,16 +125,6 @@ public class MainActivity extends AppCompatActivity {
             setContentView(R.layout.activity_main);
         }
 
-        //check if it is still today and reset if not
-        /*if(today != null){
-            Date test = Calendar.getInstance().getTime();
-            //if it is the same day
-            //if not. reset step count
-            if(today.getDay() != test.getDay() && today.getMonth() != test.getMonth()){
-                steps = 0;
-            }
-        }*/
-
         right = new Foot(this,RIGHT_FOOT);
         left = new Foot(this,LEFT_FOOT);
         auths = new HashSet<>();
@@ -160,14 +148,10 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                     String readMessage;
-                    try {
-                        readMessage = new String((byte[]) msg.obj, "UTF-8");
-                        Toast.makeText(getApplicationContext(),readMessage,Toast.LENGTH_SHORT).show();
-                        //TODO: post a step to the server here using the message
-                        //format:
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
+                    readMessage = new String((byte[]) msg.obj, StandardCharsets.UTF_8);
+                    Toast.makeText(getApplicationContext(),readMessage,Toast.LENGTH_SHORT).show();
+                    //TODO: post a step to the server here using the message
+                    //format:
                 } else if(msg.what == MESSAGE_WRITE){
                     byte[] writeBuf = (byte[]) msg.obj;
 
@@ -337,12 +321,13 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // write to OutputStream
-        public void write(byte[] buffer) {
+        void write(byte[] buffer) {
             try {
                 outputStream.write(buffer);
                 mHandler.obtainMessage(MainActivity.MESSAGE_WRITE, -1, -1,
                         buffer).sendToTarget();
             } catch (IOException e) {
+                Toast.makeText(context,"IO Exception",Toast.LENGTH_SHORT).show();
             }
         }
 

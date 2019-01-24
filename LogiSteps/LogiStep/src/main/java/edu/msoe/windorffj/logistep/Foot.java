@@ -19,9 +19,9 @@ import static edu.msoe.windorffj.logistep.MainActivity.mBTSocket;
 public class Foot {
     private static String bt_name;
     private static BluetoothDevice myDevice;
-    public static Context context;
-    public static boolean connected = false;
-    public static int foot; //0 is right, and 1 is left
+    private static Context context;
+    private static boolean connected = false;
+    private static int foot; //0 is right, and 1 is left
 
     private static final int MESSAGE_READ = 2;
     private static final int MESSAGE_WRITE = 3;
@@ -114,7 +114,7 @@ public class Foot {
     };
 
     void run_data(InputStream mmInStream){
-        byte[] buffer = new byte[1024];  // buffer store for the stream
+        byte[] buffer;  // buffer store for the stream
         int bytes; // bytes returned from read()
         // Keep listening to the InputStream until an exception occurs
         while (true) {
@@ -137,7 +137,7 @@ public class Foot {
         }
     }
 
-    public static void sendMessage(String message) {
+    private static void sendMessage(String message) {
         // Check that we're actually connected before trying anything
         if (!connected) {
             Toast.makeText(context, "Cannot send. Bluetooth not connected", Toast.LENGTH_SHORT).show();
