@@ -37,10 +37,15 @@ import android.widget.Toast;
 
 import com.squareup.okhttp.Response;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -51,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
 
     Integer stepGoal = 10000;
     Integer steps = 0;
+    Double steps_per_hour = 0.0;
     Set<String> usernames;
     Set<String> passwords;
     Set<String> auths;
@@ -419,50 +425,123 @@ public class MainActivity extends AppCompatActivity {
 
     private void login(String m_username, String m_password){
         Response r = server.getUser(m_username,m_password);
-        if(r.code() == 200) {
-            String body = r.body().toString();
-            //TODO: see what the body looks like and use that for step goal
-
-            r = server.getSteps();
-            body = r.body().toString();
-            //TODO: see what the body looks like and use that for steps and steps per hour
-
-            if(r.code() == 200) {
-                String m_auth = server.getAuthentication();
-
-                if (!auths.contains(m_auth)) {
-                    auths.add(m_auth);
-                }
-
-                if (usernames.contains(m_username)) {
-                    int i = 0;
-                    Iterator it = usernames.iterator();
-                    while (it.hasNext()) {
-                        String acc = (String) it.next();
-                        if (acc.equals(m_username)) {
-                            c_account = i;
-                        }
-                        i++;
+        if(r != null) {
+            if (r.code() == 200) {
+                try {
+                    String body = r.body().string();
+                    try {
+                        JSONObject jso = new JSONObject(body);
+                        stepGoal = (int)jso.get("step_goal");
+                    } catch(JSONException e){
+                        e.printStackTrace();
                     }
-                } else {
-                    usernames.add(m_username);
-                    passwords.add(m_password);
-                    c_account = usernames.size() - 1;
+
+                    Response r1 = server.getSteps();
+                    class runa implements Runnable {
+
+                        volatile private String body1;
+                        private Response r1;
+
+                        private runa(Response r){
+                            r1 = r;
+                        }
+
+                        @Override
+                        public void run() {
+                            try {
+                                body1 = r1.body().string();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        private String get_response() {
+                            return body1;
+                        }
+
+                    }
+
+                    if(r1.code() == 200) {
+                        runa ru = new runa(r1);
+
+                        Thread thread = new Thread(ru);
+
+                        thread.start();
+                        String body1 = null;
+                        try {
+                            thread.join();
+                            body1 = ru.get_response();
+                            try {
+                                JSONObject jso = new JSONObject(body1);
+                                steps = (int)jso.get("steps");
+                                steps_per_hour = (double)jso.get("steps_per_hour");
+                            } catch(JSONException e){
+                                e.printStackTrace();
+                            }
+                        } catch (InterruptedException e) {
+                            Toast.makeText(this, "InterruptedException: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(this, "Error Code: " + r1.code() + r1.message(), Toast.LENGTH_SHORT).show();
+                    }
+
+                    if (r.code() == 200) {
+                        String m_auth = server.getAuthentication();
+
+                        if (!auths.contains(m_auth)) {
+                            auths.add(m_auth);
+                        }
+
+                        if (usernames.contains(m_username)) {
+                            int i = 0;
+                            Iterator it = usernames.iterator();
+                            while (it.hasNext()) {
+                                String acc = (String) it.next();
+                                if (acc.equals(m_username)) {
+                                    c_account = i;
+                                }
+                                i++;
+                            }
+                        } else {
+                            usernames.add(m_username);
+                            passwords.add(m_password);
+                            c_account = usernames.size() - 1;
+                        }
+                        setContentView(R.layout.activity_main);
+
+                        TextView st = findViewById(R.id.Steps);
+                        st.setText(steps.toString());
+                        st.bringToFront();
+
+                        TextView go = findViewById(R.id.Goal);
+                        go.setText(stepGoal.toString());
+                        go.bringToFront();
+
+                        TextView ph = findViewById(R.id.per_hour);
+                        ph.setText(steps_per_hour.toString());
+                        ph.bringToFront();
+
+                        //TODO: do math for projected and show it
+                        Double projected;
+                        ZonedDateTime zdt = ZonedDateTime.now();
+                        int hour = zdt.getHour();
+                        int left = 24 - hour;
+                        projected = steps + (left * steps_per_hour);
+                        TextView pr = findViewById(R.id.ProjectedSteps);
+                        pr.setText(projected.toString());
+                        pr.bringToFront();
+
+                    } else {
+                        Toast.makeText(this, "Error Code: " + r.code() + r.message(), Toast.LENGTH_SHORT).show();
+                    }
+                } catch (IOException e) {
+                    Toast.makeText(this, "IO Exception: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
-                setContentView(R.layout.activity_main);
-
-                TextView st = findViewById(R.id.Steps);
-                st.setText(steps.toString());
-                st.bringToFront();
-
-                TextView go = findViewById(R.id.Goal);
-                go.setText(stepGoal.toString());
-                go.bringToFront();
-            } else {
-                Toast.makeText(this,"Error Code: " + r.code() + r.message(),Toast.LENGTH_SHORT).show();
+            } else { //error code
+                Toast.makeText(this, "Error Code: " + r.code() + r.message(), Toast.LENGTH_SHORT).show();
             }
-        } else { //error code
-            Toast.makeText(this,"Error Code: " + r.code() + r.message(),Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "R is Null", Toast.LENGTH_SHORT).show();
         }
     }
 
