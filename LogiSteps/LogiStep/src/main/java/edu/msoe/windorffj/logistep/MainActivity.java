@@ -62,6 +62,9 @@ public class MainActivity extends AppCompatActivity {
     Set<String> auths;
     int c_account;
 
+    SharedPreferences sharedPref;
+    SharedPreferences.Editor editor;
+
     //Date today;
     public static Foot right;
     public static Foot left;
@@ -94,7 +97,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        SharedPreferences sharedPref = this.getSharedPreferences(getString(R.string.shared_context),Context.MODE_PRIVATE);
+        sharedPref = this.getSharedPreferences(getString(R.string.shared_context),Context.MODE_PRIVATE);
+        editor = sharedPref.edit();
         usernames = sharedPref.getStringSet(getString(R.string.username_save), new HashSet<String>());
         passwords = sharedPref.getStringSet(getString(R.string.pw_save), new HashSet<String>());
         auths = sharedPref.getStringSet(getString(R.string.auths_save),new HashSet<String>());
@@ -264,9 +268,17 @@ public class MainActivity extends AppCompatActivity {
         else{
             if(mBTAdapter.isEnabled()) {
                 mBTArrayAdapter.clear(); // clear items
-                mBTAdapter.startDiscovery();
                 Toast.makeText(getApplicationContext(), "Discovery started", Toast.LENGTH_SHORT).show();
-                registerReceiver(blReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+                IntentFilter filter = new IntentFilter();
+
+                filter.addAction(BluetoothDevice.ACTION_FOUND);
+                filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+                filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+                filter.addAction((BluetoothDevice.ACTION_NAME_CHANGED));
+
+                registerReceiver(blReceiver, filter);
+
+                mBTAdapter.startDiscovery();
             }
             else{
                 Toast.makeText(getApplicationContext(), "Bluetooth not on", Toast.LENGTH_SHORT).show();
@@ -283,6 +295,10 @@ public class MainActivity extends AppCompatActivity {
                 // add the name to the list
                 mBTArrayAdapter.add(device.getName() + "\n" + device.getAddress());
                 mBTArrayAdapter.notifyDataSetChanged();
+            } else if(BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)){
+                Toast.makeText(getApplicationContext(), "Bluetooth discovery started", Toast.LENGTH_SHORT).show();
+            } else if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)){
+                Toast.makeText(getApplicationContext(), "Bluetooth discovery finished", Toast.LENGTH_SHORT).show();
             }
         }
     };
@@ -521,7 +537,6 @@ public class MainActivity extends AppCompatActivity {
                         ph.setText(steps_per_hour.toString());
                         ph.bringToFront();
 
-                        //TODO: do math for projected and show it
                         Double projected;
                         ZonedDateTime zdt = ZonedDateTime.now();
                         int hour = zdt.getHour();
@@ -629,7 +644,7 @@ public class MainActivity extends AppCompatActivity {
         // which view you pass in doesn't matter, it is only used for the window tolken
         popupWindow.showAtLocation(v, Gravity.CENTER, 0, 0);
 
-        Button log = popupView.findViewById(R.id.create);
+        Button log = popupView.findViewById(R.id.go_server);
         log.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -669,8 +684,7 @@ public class MainActivity extends AppCompatActivity {
 
         mConnectedThread.cancel();
 
-        SharedPreferences sharedPref = this.getSharedPreferences(getString(R.string.shared_context),Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
+
         editor.putInt(getString(R.string.step_save), steps);
         editor.putInt(getString(R.string.acc_save), c_account);
         editor.putStringSet(getString(R.string.username_save), usernames);
@@ -681,7 +695,17 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    
 
+    @Override
+    protected void onStop() {
+        super.onStop();
 
+        editor.putInt(getString(R.string.step_save), steps);
+        editor.putInt(getString(R.string.acc_save), c_account);
+        editor.putStringSet(getString(R.string.username_save), usernames);
+        editor.putStringSet(getString(R.string.pw_save), passwords);
+        editor.putStringSet(getString(R.string.auths_save),auths);
+        editor.putString(getString(R.string.server_connect),server_address);
+        editor.apply();
+    }
 }
