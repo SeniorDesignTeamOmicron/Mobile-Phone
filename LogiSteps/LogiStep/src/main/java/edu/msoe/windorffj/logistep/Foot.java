@@ -137,17 +137,17 @@ public class Foot {
         }
     }
 
-    private static void sendMessage(String message) {
+    private static void sendMessage(String message) { //do not need right now
         // Check that we're actually connected before trying anything
         if (!connected) {
             Toast.makeText(context, "Cannot send. Bluetooth not connected", Toast.LENGTH_SHORT).show();
             return;
         }
         // Check that there's actually something to send
-        if (message.length() > 0) {
+        if (message.length() > 0) { //
             // Get the message bytes and tell the BluetoothChatService to write
-            byte[] send = message.getBytes();
-            MainActivity.mConnectedThread.write(send);
+            //byte[] send = message.getBytes();
+            //MainActivity.mConnectedThread.write(send);
         }
     }
 

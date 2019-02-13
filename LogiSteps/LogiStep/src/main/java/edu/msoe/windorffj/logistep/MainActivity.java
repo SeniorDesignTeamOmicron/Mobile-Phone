@@ -135,7 +135,12 @@ public class MainActivity extends AppCompatActivity {
             usernames = new HashSet<>();
             passwords = new HashSet<>();
         } else  {
-            setContentView(R.layout.activity_main);
+            server = new ServerConnect(MainActivity.this);
+            Iterator it = usernames.iterator();
+            String un = it.next().toString();
+            it = passwords.iterator();
+            String pw = it.next().toString();
+            login(un,pw);
         }
 
         right = new Foot(this,RIGHT_FOOT);
@@ -162,8 +167,8 @@ public class MainActivity extends AppCompatActivity {
                     //TODO: post a step to the server here using the message
                     server.post_step(foot,0,0); //default for now
                     //format:
-                } else if(msg.what == MESSAGE_WRITE){
-                    byte[] writeBuf = (byte[]) msg.obj;
+                } else if(msg.what == MESSAGE_WRITE){ //do not need right now
+                    //byte[] writeBuf = (byte[]) msg.obj;
 
                 }
 
@@ -684,7 +689,6 @@ public class MainActivity extends AppCompatActivity {
 
         mConnectedThread.cancel();
 
-
         editor.putInt(getString(R.string.step_save), steps);
         editor.putInt(getString(R.string.acc_save), c_account);
         editor.putStringSet(getString(R.string.username_save), usernames);
@@ -699,6 +703,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
+
+        try {
+            mBTSocket.close();
+        } catch(IOException e){
+            Toast.makeText(this, "IO Exception: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
 
         editor.putInt(getString(R.string.step_save), steps);
         editor.putInt(getString(R.string.acc_save), c_account);
