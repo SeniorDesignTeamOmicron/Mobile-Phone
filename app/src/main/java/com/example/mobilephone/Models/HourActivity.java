@@ -4,16 +4,16 @@ import com.google.gson.annotations.SerializedName;
 
 public class HourActivity {
     @SerializedName("hour")
-    private int hour;
+    private String hour;
 
     @SerializedName("steps")
     private int steps;
 
-    public int getHour() {
+    public String getHour() {
         return hour;
     }
 
-    public void setHour(int hour) {
+    public void setHour(String hour) {
         this.hour = hour;
     }
 
