@@ -325,8 +325,10 @@ public class MainActivity extends AppCompatActivity implements DevicesAdapter.On
     private void configureViewModel() {
         userViewModel = ViewModelProviders.of(this, viewModelFactory).get(UserViewModel.class);
         stepSummaryViewModel = ViewModelProviders.of(this, viewModelFactory).get(StepSummaryViewModel.class);
-        mLShoeViewModel = ViewModelProviders.of(this, viewModelFactory).get(ShoeViewModel.class);
-        mRSHoeViewModel = ViewModelProviders.of(this, viewModelFactory).get(ShoeViewModel.class);
+//        mLShoeViewModel = ViewModelProviders.of(this, viewModelFactory).get(ShoeViewModel.class);
+//        mRSHoeViewModel = ViewModelProviders.of(this, viewModelFactory).get(ShoeViewModel.class);
+        mRSHoeViewModel = new ShoeViewModel(getApplication());
+        mLShoeViewModel = new ShoeViewModel(getApplication());
     }
 
     /**
@@ -370,7 +372,7 @@ public class MainActivity extends AppCompatActivity implements DevicesAdapter.On
     }
 
     private void setShoeConnected(ShoeViewModel mShoeViewModel) {
-        if(mShoeViewModel.getShoe().getFoot().equals("left")) {
+        if(mShoeViewModel.getShoe().getFoot().equals("L")) {
             mLShoeStatus.setText(getString(R.string.connected));
             mLShoeStatus.setTextColor(ContextCompat.getColor(this,R.color.Green));
             mLShoeConnectButton.setText(getString(R.string.disconnect));
@@ -382,7 +384,7 @@ public class MainActivity extends AppCompatActivity implements DevicesAdapter.On
     }
 
     private void setShoeDisconnected(ShoeViewModel mShoeViewModel) {
-        if(mShoeViewModel.getShoe().getFoot().equals("left")) {
+        if(mShoeViewModel.getShoe().getFoot().equals("L")) {
             mLShoeStatus.setText(getString(R.string.disconnected));
             mLShoeStatus.setTextColor(ContextCompat.getColor(this,R.color.Red));
             mLShoeConnectButton.setText(getString(R.string.connect));
