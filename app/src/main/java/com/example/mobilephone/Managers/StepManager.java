@@ -6,34 +6,36 @@ import com.example.mobilephone.Models.Step;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class StepManager {
+    private final double PATTERN_TIMEOUT = 5;    //5 seconds
+    private final int SAMPLES_PER_SECOND = 15;
+    private final int MIN_SAMPLES = SAMPLES_PER_SECOND / 3;
+    private final int MAX_SAMPLES = (int) PATTERN_TIMEOUT * SAMPLES_PER_SECOND;
 
-    private final int STEP_EVENT_SIZE = 15;
     private final double PRESSURE_THRESHOLD = 50.0;
     private final long TIME_THRESHOLD = 500;
 
-    ArrayList<SensorReading> topSensorReadings;
-    ArrayList<SensorReading> bottomSensorReadings;
+    private SensorAnalyzer topSensorAnalyzer;
+    private SensorAnalyzer bottomSensorAnalyzer;
 
-    private long lastTopSensorUpdate;
-    private long lastBottomSensorUpdate;
-    private StepState stepState;
+    private enum SensorLocations {TOP, BOTTOM};
+
+    private PatternEvent lastTopSensorPattern;
+    private PatternEvent lastBottomSensorPattern;
 
     //TODO Should have some location manager
 
     private OnStepCreatedEventListener onStepCreatedEventListener;
 
     public StepManager() {
-        topSensorReadings = new ArrayList<>();
-        bottomSensorReadings = new ArrayList<>();
-
-        lastTopSensorUpdate = 0;
-        lastBottomSensorUpdate = 0;
-        stepState = StepState.IDLE;
+        topSensorAnalyzer = new SensorAnalyzer(PRESSURE_THRESHOLD, pattern -> onSensorDataPatternReceived(pattern, SensorLocations.TOP));
+        bottomSensorAnalyzer = new SensorAnalyzer(PRESSURE_THRESHOLD, pattern -> onSensorDataPatternReceived(pattern, SensorLocations.BOTTOM));
     }
 
     public void setOnStepCreatedEventListener(OnStepCreatedEventListener eventListener) {
@@ -41,104 +43,139 @@ public class StepManager {
     }
 
     public void addTopSensorReadings(List<SensorReading> sensorReadings) {
-        //TODO try to create step if possible. If possible, call the event listener
-        long now = System.currentTimeMillis();
-
-        //Check to see if the data is a new data burst, and there is already sensor data
-        //If there is, then we need to reset
-        if(topSensorReadings.size() > 0) {
-
-            if (now - lastTopSensorUpdate > TIME_THRESHOLD) {
-                //Need to reset the data. A potential step was not received
-                topSensorReadings.clear();
-            }
-        }
-
-        topSensorReadings.addAll(sensorReadings);
-        lastTopSensorUpdate = now;
-
-        onSensorDataReceived();
+        topSensorAnalyzer.submitSamples(sensorReadings);
     }
 
     public void addBottomSensorReadings(List<SensorReading> sensorReadings) {
-        //TODO try to create step if possible. If possible, call the event listener
-        long now = System.currentTimeMillis();
+        bottomSensorAnalyzer.submitSamples(sensorReadings);
+    }
 
-        //Check to see if the data is a new data burst, and there is already sensor data
-        //If there is, then we need to reset
-        if(bottomSensorReadings.size() > 0) {
+    private void onSensorDataPatternReceived(SensorPattern pattern, SensorLocations sensor) {
+        if (pattern.getLength() > MIN_SAMPLES && pattern.getLength() < MAX_SAMPLES) {
+            cachePattern(pattern, sensor);
 
-            if (now - lastBottomSensorUpdate > TIME_THRESHOLD) {
-                //Need to reset the data. A potential error occurred
-                bottomSensorReadings.clear();
+            // Either two patterns have been discovered and a step should be created,
+            // or a new pattern has been discovered for the same sensor, and a step should be
+            // created with only a single sensor reading
+
+            //If both top and bottom patterns have been discovered and the time between them is
+            //small enough, create a step using both. Otherwise, a step should be created with the
+            //older sample and the newer sample should wait to see if it can be sent with the other
+            //sensor pattern
+            if (lastBottomSensorPattern != null && lastTopSensorPattern != null) {
+                if (areSensorPatternsCorrelated()) {
+                    //create step with both
+                    createStep(Arrays.asList(lastTopSensorPattern, lastBottomSensorPattern));
+
+                    clearCache();
+                } else {
+                    //create step with oldest
+                    PatternEvent oldest = getOldestPattern();
+                    createStep(Arrays.asList(oldest));
+
+                    if (oldest.location == SensorLocations.TOP) lastTopSensorPattern = null;
+                    else lastBottomSensorPattern = null;
+                }
+            } else if (lastTopSensorPattern != null && sensor == SensorLocations.TOP) {
+                createStep(Arrays.asList(lastTopSensorPattern));
+                overwriteCache(pattern, sensor);
+            } else if (lastBottomSensorPattern != null && sensor == SensorLocations.BOTTOM) {
+                createStep(Arrays.asList(lastBottomSensorPattern));
+                overwriteCache(pattern, sensor);
+            }
+        }
+    }
+
+    private PatternEvent getOldestPattern() {
+        if (lastBottomSensorPattern.timestamp < lastTopSensorPattern.timestamp) {
+            return lastBottomSensorPattern;
+        }
+
+        return lastTopSensorPattern;
+    }
+
+    private boolean areSensorPatternsCorrelated() {
+        boolean correlated = false;
+
+        if(lastBottomSensorPattern != null && lastTopSensorPattern != null) {
+            if (Math.abs(lastTopSensorPattern.timestamp - lastBottomSensorPattern.timestamp) < TIME_THRESHOLD) {
+                correlated = true;
             }
         }
 
-        bottomSensorReadings.addAll(sensorReadings);
-        lastBottomSensorUpdate = now;
-
-        onSensorDataReceived();
+        return correlated;
     }
 
-    private double getAvgPressure(ArrayList<SensorReading> sensorReadings) {
-        double average = 0;
-        for (int i = 0; i < sensorReadings.size(); i++) {
-            average += sensorReadings.get(i).getPressure();
-        }
+    private void overwriteCache(SensorPattern pattern, SensorLocations sensor) {
+        if (sensor == SensorLocations.TOP) {
+            lastTopSensorPattern = new PatternEvent(System.currentTimeMillis(), pattern, sensor);
+        } else {
+            lastBottomSensorPattern = new PatternEvent(System.currentTimeMillis(), pattern, sensor);
 
-        if (average != 0) {
-            average /= sensorReadings.size();
         }
-
-        return average;
     }
 
-    private void onSensorDataReceived() {
-        //TODO may need to add mutex protection
-        if (topSensorReadings.size() >= STEP_EVENT_SIZE && bottomSensorReadings.size() >= STEP_EVENT_SIZE) {
-
-            // If both sensors have average pressure larger than the threshold and they occurred within a
-            // small enough interval of time, create a step
-            if (getAvgPressure(topSensorReadings) >= PRESSURE_THRESHOLD
-                    && getAvgPressure(bottomSensorReadings) >= PRESSURE_THRESHOLD
-                    && Math.abs(lastBottomSensorUpdate - lastTopSensorUpdate) < TIME_THRESHOLD
-            ) {
-                if (stepState != StepState.STEP_DOWN) {
-                    createStep();
-                }
-                stepState = StepState.STEP_DOWN;
-            } else {
-                if (stepState == StepState.STEP_DOWN) {
-                    stepState = StepState.STEP_UP;
-                } else if (stepState == StepState.STEP_UP) {
-                    stepState = StepState.IDLE;
-                }
+    /**
+     * Only Cache if no patten exists yet.
+     * @param pattern
+     * @param sensor
+     */
+    private void cachePattern(SensorPattern pattern, SensorLocations sensor) {
+        if (sensor == SensorLocations.TOP) {
+            if (lastTopSensorPattern == null) {
+                lastTopSensorPattern = new PatternEvent(System.currentTimeMillis(), pattern, sensor);
             }
-
-            topSensorReadings.clear();
-            bottomSensorReadings.clear();
+        } else {
+            if (lastBottomSensorPattern == null) {
+                lastBottomSensorPattern = new PatternEvent(System.currentTimeMillis(), pattern, sensor);
+            }
         }
     }
 
-    private List<SensorReading> createPressureList() {
-        SensorReading topReading = new SensorReading("T", getAvgPressure(topSensorReadings));
-        SensorReading bottomReading = new SensorReading("B", getAvgPressure(bottomSensorReadings));
+    private void clearCache() {
+        lastBottomSensorPattern = null;
+        lastTopSensorPattern = null;
+    }
 
+    private List<SensorReading> createPressureList(List<PatternEvent> patternEvents) {
         ArrayList<SensorReading> pressureList = new ArrayList<>();
-        pressureList.add(topReading);
-        pressureList.add(bottomReading);
+
+        SensorReading topReading = null;
+        SensorReading bottomReading = null;
+
+        for (PatternEvent pattern: patternEvents) {
+            if (pattern.location == SensorLocations.TOP) {
+                topReading = new SensorReading("T", pattern.pattern.getAvgPressure());
+                pressureList.add(topReading);
+            } else if (pattern.location == SensorLocations.BOTTOM) {
+                bottomReading = new SensorReading("B", pattern.pattern.getAvgPressure());
+                pressureList.add(bottomReading);
+            }
+        }
 
         return pressureList;
     }
 
-    private void createStep() {
+    private void createStep(List<PatternEvent> patternEvents) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US);
         String datetime = sdf.format(new Date());
 
         Location location = new Location(178.92323, -9.23422);
 
-        Step step = new Step(datetime, createPressureList(), location);
+        Step step = new Step(datetime, createPressureList(patternEvents), location);
 
         onStepCreatedEventListener.onStepCreated(step);
+    }
+
+    private class PatternEvent {
+        public long timestamp;
+        public SensorLocations location;
+        public SensorPattern pattern;
+
+        public PatternEvent(long timestamp, SensorPattern pattern, SensorLocations location) {
+            this.timestamp = timestamp;
+            this.pattern = pattern;
+            this.location = location;
+        }
     }
 }

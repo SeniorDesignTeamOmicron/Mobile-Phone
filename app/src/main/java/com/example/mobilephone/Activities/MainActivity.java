@@ -325,10 +325,8 @@ public class MainActivity extends AppCompatActivity implements DevicesAdapter.On
     private void configureViewModel() {
         userViewModel = ViewModelProviders.of(this, viewModelFactory).get(UserViewModel.class);
         stepSummaryViewModel = ViewModelProviders.of(this, viewModelFactory).get(StepSummaryViewModel.class);
-//        mLShoeViewModel = ViewModelProviders.of(this, viewModelFactory).get(ShoeViewModel.class);
-//        mRSHoeViewModel = ViewModelProviders.of(this, viewModelFactory).get(ShoeViewModel.class);
-        mRSHoeViewModel = new ShoeViewModel(getApplication());
-        mLShoeViewModel = new ShoeViewModel(getApplication());
+        mLShoeViewModel = ViewModelProviders.of(this, viewModelFactory).get("Left", ShoeViewModel.class);
+        mRSHoeViewModel = ViewModelProviders.of(this, viewModelFactory).get("Right", ShoeViewModel.class);
     }
 
     /**
