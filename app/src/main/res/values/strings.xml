@@ -8,7 +8,7 @@
     <string name="action_sign_in_short">Sign in</string>
     <string name="error_invalid_email">This email address is invalid</string>
     <string name="error_invalid_password">This password is too short</string>
-    <string name="error_incorrect_password">This password is incorrect</string>
+    <string name="error_incorrect_password">The password and/or username is incorrect</string>
     <string name="error_field_required">This field is required</string>
     <string name="permission_rationale">"Contacts permissions are needed for providing email
         completions."
@@ -75,7 +75,7 @@
     <string name="bluetooth_disabled_info">The Bluetooth adapter is turned off. Click the button below to enable it.</string>
     <string name="bluetooth_disabled_action">Enable</string>
 
-    <string name="blinky_guide_title">Cab\'t see your LogiStep?</string>
+    <string name="blinky_guide_title">Can\'t see your LogiStep insole?</string>
     <string name="blinky_guide_info"><b>1</b>. Make sure the insole is <b>in your shoe</b>.
         \n\n<b>2</b>. Try walking around with the insole more.</string>
     <string name="blinky_guide_location_info"><b>3</b>. Location may be turned off. Some Android phones require it enabled in order to scan for Bluetooth LE devices.
