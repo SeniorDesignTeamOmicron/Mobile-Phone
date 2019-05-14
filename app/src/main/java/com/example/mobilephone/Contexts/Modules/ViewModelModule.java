@@ -3,7 +3,7 @@ package com.example.mobilephone.Contexts.Modules;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.example.mobilephone.Bluetooth.viewmodels.ShoeViewModel;
+import com.example.mobilephone.ViewModels.ShoeViewModel;
 import com.example.mobilephone.Contexts.keys.ViewModelKey;
 import com.example.mobilephone.ViewModels.FactoryViewModel;
 import com.example.mobilephone.ViewModels.StepSummaryViewModel;

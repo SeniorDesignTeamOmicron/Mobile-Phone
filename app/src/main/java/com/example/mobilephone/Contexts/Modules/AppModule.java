@@ -6,6 +6,7 @@ import com.example.mobilephone.Databases.StepSummaryDao;
 import com.example.mobilephone.Databases.StepSummaryDatabase;
 import com.example.mobilephone.Databases.UserDao;
 import com.example.mobilephone.Databases.UserDatabase;
+import com.example.mobilephone.Repositories.LocationRepository;
 import com.example.mobilephone.Services.LogistepsService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -50,6 +51,12 @@ public class AppModule {
     @Singleton
     UserDao provideUserDao(UserDatabase database) {
         return database.userDao();
+    }
+
+    @Provides
+    @Singleton
+    LocationRepository provideLocationRepository(Application application) {
+        return new LocationRepository(application.getApplicationContext());
     }
 
     //Repositories

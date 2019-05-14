@@ -20,7 +20,7 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.example.mobilephone.Bluetooth.viewmodels;
+package com.example.mobilephone.ViewModels;
 
 import android.app.Application;
 
@@ -132,7 +132,7 @@ public class ShoeViewModel extends AndroidViewModel implements LogistepsManagerC
 		steps = new ArrayList<>();
 
 		//Create step manager. Collects sensor readings and creates steps
-        stepManager = new StepManager();
+        stepManager = new StepManager(application.getApplicationContext());
         stepManager.setOnStepCreatedEventListener(step -> {
         	step.setShoe(shoe.getFoot());
             steps.add(step);

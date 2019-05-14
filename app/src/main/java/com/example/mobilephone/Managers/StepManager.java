@@ -1,8 +1,12 @@
 package com.example.mobilephone.Managers;
 
+import android.app.Application;
+import android.content.Context;
+
 import com.example.mobilephone.Models.Location;
 import com.example.mobilephone.Models.SensorReading;
 import com.example.mobilephone.Models.Step;
+import com.example.mobilephone.Repositories.LocationRepository;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -12,11 +16,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import javax.inject.Inject;
+
 public class StepManager {
     private final double PATTERN_TIMEOUT = 5;    //5 seconds
     private final int SAMPLES_PER_SECOND = 15;
     private final int MIN_SAMPLES = SAMPLES_PER_SECOND / 3;
     private final int MAX_SAMPLES = (int) PATTERN_TIMEOUT * SAMPLES_PER_SECOND;
+
+    @Inject LocationRepository locationRepository;
 
     private final double PRESSURE_THRESHOLD = 50.0;
     private final long TIME_THRESHOLD = 500;
@@ -33,7 +41,8 @@ public class StepManager {
 
     private OnStepCreatedEventListener onStepCreatedEventListener;
 
-    public StepManager() {
+    public StepManager(Context context) {
+        locationRepository = new LocationRepository(context);
         topSensorAnalyzer = new SensorAnalyzer(PRESSURE_THRESHOLD, pattern -> onSensorDataPatternReceived(pattern, SensorLocations.TOP));
         bottomSensorAnalyzer = new SensorAnalyzer(PRESSURE_THRESHOLD, pattern -> onSensorDataPatternReceived(pattern, SensorLocations.BOTTOM));
     }
@@ -160,7 +169,13 @@ public class StepManager {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US);
         String datetime = sdf.format(new Date());
 
-        Location location = new Location(178.92323, -9.23422);
+        android.location.Location lastLocation = locationRepository.getLastLocation();
+        Location location;
+        if (lastLocation != null) {
+            location = new Location(lastLocation.getLatitude(), lastLocation.getLongitude());
+        } else {
+            location = new Location(0, 0);
+        }
 
         Step step = new Step(datetime, createPressureList(patternEvents), location);
 

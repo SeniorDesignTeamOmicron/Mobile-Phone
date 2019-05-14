@@ -36,7 +36,7 @@ import android.widget.TextView;
 import com.example.mobilephone.Bluetooth.adapter.DevicesAdapter;
 import com.example.mobilephone.Bluetooth.adapter.DiscoveredBluetoothDevice;
 import com.example.mobilephone.Bluetooth.utils.Utils;
-import com.example.mobilephone.Bluetooth.viewmodels.ShoeViewModel;
+import com.example.mobilephone.ViewModels.ShoeViewModel;
 import com.example.mobilephone.Bluetooth.viewmodels.ScannerStateLiveData;
 import com.example.mobilephone.Bluetooth.viewmodels.ScannerViewModel;
 import com.example.mobilephone.R;
@@ -149,8 +149,8 @@ public class MainActivity extends AppCompatActivity implements DevicesAdapter.On
             }
         });
 
-        this.configureDagger();
-        this.configureViewModel();
+        //this.configureDagger();
+        //this.configureViewModel();
 
         sharedPreferences = getSharedPreferences("userCredentials", MODE_PRIVATE);
         String username = sharedPreferences.getString("username", "");
